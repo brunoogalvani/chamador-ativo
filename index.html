@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamador Ativo - Rocket.Chat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Enviar Mensagem</h1>
+        
+        <div class="form-container">
+            <form id="messageForm">
+                <!-- Campo de Telefone -->
+                <div class="form-group">
+                    <label for="telefone">Número de telefone (com DDD)</label>
+                    <input type="text" id="telefone" name="telefone" placeholder="5511999999999" required>
+                </div>
+
+                <!-- Select de Templates -->
+                <div class="form-group">
+                    <label for="template-select">Escolha o template de mensagem</label>
+                    <select id="template-select" name="template">
+                        <option value="" selected disabled>Carregando templates...</option>
+                    </select>
+                </div>
+
+                <!-- Área de Campos Dinâmicos -->
+                <div id="dynamic-fields-container" class="dynamic-fields" style="display: none;">
+                    <label>Preencha as variáveis:</label>
+                    <div id="dynamic-fields"></div>
+                </div>
+
+                <!-- Área de Preview -->
+                <div id="preview-container" class="preview-container" style="display: none;">
+                    <label>Preview da mensagem:</label>
+                    <div id="preview-text" class="preview-text"></div>
+                </div>
+
+                <!-- Botão Disparar -->
+                <button type="submit" id="disparar-btn" class="btn-disparar" disabled>
+                    DISPARAR
+                </button>
+            </form>
+        </div>
+
+        <!-- Mensagem de status -->
+        <div id="status-message" class="status-message"></div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
