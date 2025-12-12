@@ -14,6 +14,7 @@ let placeholderValues = {};
 
 // Elementos DOM
 const telefoneInput = document.getElementById('telefone');
+const tipoTemplate = document.getElementById('tipo-template-select');
 const templateSelect = document.getElementById('template-select');
 const dynamicFieldsContainer = document.getElementById('dynamic-fields-container');
 const dynamicFields = document.getElementById('dynamic-fields');
@@ -39,8 +40,9 @@ async function carregarTemplates() {
     
     // Se não houver credenciais, usar fallback imediatamente (modo teste)
     if (!apiKey || !instanceId || API_CONFIG.modoTeste) {
-        templatesList = getFallbackTemplates();
-        popularSelectTemplates();
+        templatesList = getFallbackTemplates().filter(t=> t.category === 'UTILITY');
+        popularSelectTipos();
+        templateSelect.innerHTML = '<option value="" selected disabled>Selecione um tipo primeiro</option>';
         showStatus('✅ Modo Teste: Templates de exemplo carregados', 'success');
         return;
     }
@@ -64,21 +66,22 @@ async function carregarTemplates() {
         const data = await response.json();
         
         // A estrutura da resposta pode variar, ajuste conforme necessário
-        templatesList = data.templates || data || [];
+        templatesList = (data.templates || data || []).filter(t=> t.category === 'UTILITY');
         
         if (templatesList.length === 0) {
             throw new Error('Nenhum template encontrado');
         }
         
-        popularSelectTemplates();
+        popularSelectTipos();
+        templateSelect.innerHTML = '<option value="" selected disabled>Selecione um tipo primeiro</option>';
         showStatus('Templates carregados com sucesso!', 'success');
         
     } catch (error) {
         console.error('Erro ao carregar templates:', error);
         
         // Fallback: usar templates de exemplo para desenvolvimento
-        templatesList = getFallbackTemplates();
-        popularSelectTemplates();
+        templatesList = getFallbackTemplates().filter(t => t.category === 'UTILITY');
+        // popularSelectTemplates();
         showStatus('⚠️ Erro ao carregar templates da API. Usando templates de exemplo (modo teste).', 'warning');
     }
 }
@@ -89,38 +92,67 @@ async function carregarTemplates() {
 function getFallbackTemplates() {
     return [
         {
-            name: 'ass_primeiro-acesso',
-            category: 'ASSISTENTE',
-            language: 'pt_BR',
-            status: 'APPROVED',
-            components: [
-                {
-                    type: 'BODY',
-                    text: 'Olá {{nome}}! Detectamos seu primeiro acesso. Podemos confirmar alguns dados?'
-                }
-            ]
-        },
-        {
-            name: 'bol_segunda-via',
+            name: 'primeiro-acesso',
+            template_label: 'assistido',
             category: 'UTILITY',
             language: 'pt_BR',
             status: 'APPROVED',
             components: [
                 {
                     type: 'BODY',
-                    text: 'Olá {{nome}}, sua segunda via do boleto {{numero_boleto}} foi gerada. Valor: R$ {{valor}}. Podemos enviá-la agora?'
+                    text: 'Olá {{1}}! Detectamos seu primeiro acesso. Podemos confirmar alguns dados?'
                 }
             ]
         },
         {
-            name: 'bol_boleto-atrasado',
+            name: 'segundo-acesso',
+            template_label: 'assistido',
             category: 'UTILITY',
             language: 'pt_BR',
             status: 'APPROVED',
             components: [
                 {
                     type: 'BODY',
-                    text: 'Seu boleto {} venceu há {} dias. Gostaria de receber um link atualizado?'
+                    text: 'Olá {{1}}! Detectamos seu segundo acesso no dia {{2}}. Podemos confirmar alguns dados?'
+                }
+            ]
+        },
+        {
+            name: 'segunda-via',
+            template_label: 'boleto',
+            category: 'UTILITY',
+            language: 'pt_BR',
+            status: 'APPROVED',
+            components: [
+                {
+                    type: 'BODY',
+                    text: 'Olá {{1}}, sua segunda via do boleto {{2}} foi gerada. Valor: R$ {{3}}. Podemos enviá-la agora?'
+                }
+            ]
+        },
+        {
+            name: 'boleto-atrasado',
+            template_label: 'boleto',
+            category: 'UTILITY',
+            language: 'pt_BR',
+            status: 'APPROVED',
+            components: [
+                {
+                    type: 'BODY',
+                    text: 'Seu boleto {{1}} venceu há {{2}} dias. Gostaria de receber um link atualizado?'
+                }
+            ]
+        },
+        {
+            name: 'cobranca',
+            template_label: 'boleto',
+            category: 'MARKETING',
+            language: 'pt_BR',
+            status: 'APPROVED',
+            components: [
+                {
+                    type: 'BODY',
+                    text: 'Seu boleto {{1}} venceu há {{2}} dias. Pague ele agora mesmo.'
                 }
             ]
         }
@@ -131,16 +163,52 @@ function getFallbackTemplates() {
  * Formata o nome do template removendo prefixos (bol_, ass_, etc.)
  */
 function formatarNomeTemplate(nomeOriginal) {
-    // Remove prefixos comuns como bol_, ass_, etc.
-    let nomeFormatado = nomeOriginal.replace(/^(bol_|ass_|msg_|notif_)/i, '');
-    
     // Substitui underscores por espaços
-    nomeFormatado = nomeFormatado.replace(/-/g, ' ');
+    nomeFormatado = nomeOriginal.replace(/-/g, ' ');
     
     // Capitaliza primeira letra de cada palavra
     nomeFormatado = nomeFormatado.replace(/\b\w/g, l => l.toUpperCase());
     
     return nomeFormatado;
+}
+
+/**
+ * Popula o select de tipos de template (labels)
+ */
+function popularSelectTipos() {
+    const tipos = [...new Set(templatesList.map(t => t.template_label))];
+
+    tipoTemplate.innerHTML = '<option value="" selected disabled>Selecione o tipo</option>';
+
+    tipos.forEach(tipo => {
+        const option = document.createElement('option');
+        option.value = tipo;
+        option.textContent = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+        tipoTemplate.appendChild(option);
+    });
+}
+
+/**
+ * Filtra templates pelo tipo (template_label)
+ */
+function filtrarTemplatesPorTipo(tipoSelecionado) {
+    const filtrados = templatesList.filter(t => t.template_label === tipoSelecionado);
+
+    templateSelect.innerHTML = '<option value="" selected disabled>Selecione o template</option>';
+
+    filtrados.forEach(template => {
+        const option = document.createElement('option');
+        option.value = template.name;
+        option.textContent = formatarNomeTemplate(template.name);
+        option.dataset.template = JSON.stringify(template);
+        templateSelect.appendChild(option);
+    });
+
+    // Limpa seleção anterior
+    currentTemplate = null;
+    previewContainer.style.display = 'none';
+    dynamicFieldsContainer.style.display = 'none';
+    document.getElementById('template-text-container')?.remove();
 }
 
 /**
@@ -174,7 +242,7 @@ function detectarPlaceholders(texto) {
         const nome = match[1];
         if (!placeholders.find(p => p.nome === nome)) {
             placeholders.push({
-                nome: nome,
+                nome: `Variavel ${nome}`,
                 tipo: 'nomeado',
                 padrao: match[0],
                 index: match.index
@@ -447,6 +515,11 @@ function verificarHabilitacaoBotao() {
  * Configura event listeners
  */
 function setupEventListeners() {
+    // Quando muda o tipo de template, filtra os templates
+    tipoTemplate.addEventListener('change', () => {
+        filtrarTemplatesPorTipo(tipoTemplate.value);
+    });
+
     templateSelect.addEventListener('change', processarTemplateSelecionado);
     
     // Valida telefone e verifica botão em tempo real
